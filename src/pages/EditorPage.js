@@ -130,44 +130,45 @@ const EditorPage = () => {
     const input = document.getElementById("input").value;
     const code = codeRef.current;
 
-    toast.loading("Running Code....");
-
-    const encodedParams = new URLSearchParams();
-    encodedParams.append("LanguageChoice", lang);
-    encodedParams.append("Program", code);
-    encodedParams.append("Input", input);
-
-    const options = {
-      method: "POST",
-      url: "https://code-compiler.p.rapidapi.com/v2",
-      headers: {
-        "content-type": "application/x-www-form-urlencoded",
-        "X-RapidAPI-Key": process.env.REACT_APP_API_KEY,
-        "X-RapidAPI-Host": "code-compiler.p.rapidapi.com",
-      },
-      data: encodedParams,
+    // Map language choice to our backend language names
+    const languageMap = {
+      '1': 'csharp',
+      '4': 'java', 
+      '5': 'python',
+      '6': 'c',
+      '7': 'cpp',
+      '8': 'php',
+      '17': 'javascript',
+      '20': 'go',
+      '21': 'scala',
+      '37': 'swift',
+      '38': 'bash',
+      '43': 'kotlin',
+      '60': 'typescript'
     };
 
-    console.log(options);
+    const language = languageMap[lang] || 'javascript';
 
-    axios
-      .request(options)
-      .then(function (response) {
-        let message = response.data.Result;
-        if (message === null) {
-          message = response.data.Errors;
-        }
-        outputClicked();
-        document.getElementById("input").value = message;
-        toast.dismiss();
-        toast.success("Code compilation complete");
-      })
-      .catch(function (error) {
-        toast.dismiss();
-        toast.error("Code compilation unsuccessful");
-        document.getElementById("input").value =
-          "Something went wrong, Please check your code and input.";
-      });
+    toast.loading("Running Code....");
+
+    axios.post('/run-code', {
+      code,
+      language,
+      input
+    })
+    .then(function (response) {
+      let message = response.data.output || response.data.stderr || response.data.compile_output || 'No output';
+      outputClicked();
+      document.getElementById("input").value = message;
+      toast.dismiss();
+      toast.success("Code compilation complete");
+    })
+    .catch(function (error) {
+      toast.dismiss();
+      toast.error("Code compilation unsuccessful");
+      document.getElementById("input").value =
+        "Something went wrong, Please check your code and input.";
+    });
   };
 
   const sendMessage = () => {
